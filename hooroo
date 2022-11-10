@@ -36,7 +36,7 @@ else
 	user=$USER
 fi
 
-# Default location for packages file
+# Find user's home directory from passwd file
 home=$(getent passwd $user | cut -d: -f6)
 
 # Set XDG config directory
@@ -87,13 +87,13 @@ case $cmd in
 		installed_packages=$($package_manager -Qqe)
 		packages=$(cat $file)
 
-		# Install packages in the packages file that aren't installed
+		# Install packages in the packages file that aren't explicitly installed
 		installs=$(diff --old-line-format= --unchanged-line-format= <(echo "$installed_packages") <(echo "$packages"))
 		if [[ -n $installs ]]; then
 			$package_manager -Sy $confirm $installs
 		fi
 
-		# Remove packages not in the packages file, and unneeded dependencies
+		# Remove explicitly installed packages not in the packages file, and unneeded dependencies
 		removes=$(diff --old-line-format= --unchanged-line-format= <(echo "$packages") <(echo "$installed_packages"))
 		if [[ -n $removes ]]; then
 			$package_manager -Rsn $confirm $removes

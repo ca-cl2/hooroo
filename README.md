@@ -17,7 +17,7 @@ It installs packages in your package file that are not explicitly installed, and
 
 It updates your package file with a list of explicitly installed packages.
 
-The default package file location is `$XDG_CONFIG_HOME/packages.txt`, or `$HOME/.config/packages.txt`, but it can be changed with the `-f` or `--file` flags.
+The default package file location is `$XDG_CONFIG_HOME/packages.txt` or `$HOME/.config/packages.txt`, but it can be changed with the `-f` or `--file` flags.
 
 ## Acknowledgements
 This is heavily based on [pacmanfile](https://github.com/cloudlena/pacmanfile), thanks!
