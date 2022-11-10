@@ -1,8 +1,14 @@
 # hooroo
+
+[![hooroo](https://img.shields.io/aur/version/hooroo)](https://aur.archlinux.org/packages/hooroo)
+
 Hooroo lets you synchronise your pacman packages with a file.
 It works with pacman, paru and yay.
 
-## Using
+## Installation
+Hooroo is available in the [AUR](https://aur.archlinux.org/packages/hooroo).
+
+## Usage
 `hooroo apply` brings your system's packages up to date with your package file.
 
 It installs packages in your package file that are not explicitly installed, and removes packages that are explicitly installed, but are not in your package file, or are unneeded dependencies.
