@@ -1,0 +1,11 @@
+[Trigger]
+Type = Package
+Operation = Install
+Operation = Remove
+Operation = Upgrade
+Target = *
+
+[Action]
+Description = Updating the packages file...
+When = PostTransaction
+Exec = /usr/bin/hooroo save

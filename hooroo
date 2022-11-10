@@ -1,0 +1,121 @@
+#!/bin/bash
+
+help_msg='hooroo - Synchronise your pacman packages with a file
+
+Usage:
+  hooroo <command> [options]
+
+Commands:
+  apply			Bring system packages up to date with packages file
+  save			Bring packages file up to date with system packages
+
+Options:
+  -f, --file		Packages file location
+  -h, --help		Show this help
+  --noconfirm		Do not ask for confirmation when upgrading packages
+
+Default file locations:
+  $XDG_CONFIG_HOME/packages.txt
+  $HOME/.config/packages.txt'
+
+# Find if AUR helper is installed
+package_manager=pacman
+
+if [[ -x $(command -v paru) ]]; then
+	package_manager=paru
+elif [[ -x $(command -v yay) ]]; then
+	package_manager=yay
+fi
+
+# Find who the actual user is
+if [[ -n $SUDO_USER ]]; then
+	user=$SUDO_USER
+elif [[ -n $DOAS_USER ]]; then
+	user=$DOAS_USER
+else
+	user=$USER
+fi
+
+# Default location for packages file
+home=$(getent passwd $user | cut -d: -f6)
+
+# Set XDG config directory
+if [[ -z $XDG_CONFIG_HOME ]]; then
+	XDG_CONFIG_HOME=$home/.config
+fi
+
+# Set default packages file location
+file=$XDG_CONFIG_HOME/packages.txt
+
+# Loop through args until there are no more
+while [[ $# -gt 0 ]]; do
+
+	# Check for commands and options
+	case $1 in
+		apply)
+			cmd=apply
+			shift	;;
+		-f)
+			shift
+			file=$1
+			shift	;;
+		--file)
+			shift
+			file=$1
+			shift	;;
+		-h)
+			echo "$help_msg"
+			exit 0	;;
+		--help)
+			echo "$help_msg"
+			exit 0	;;
+		--noconfirm)
+			confirm=--noconfirm
+			shift	;;
+		save)
+			cmd=save
+			shift	;;
+		*)
+			shift	;;
+	esac
+
+done
+
+# Check for command
+case $cmd in
+	apply)
+		installed_packages=$($package_manager -Qqe)
+		packages=$(cat $file)
+
+		# Install packages in the packages file that aren't installed
+		installs=$(diff --old-line-format= --unchanged-line-format= <(echo "$installed_packages") <(echo "$packages"))
+		if [[ -n $installs ]]; then
+			$package_manager -Sy $confirm $installs
+		fi
+
+		# Remove packages not in the packages file, and unneeded dependencies
+		removes=$(diff --old-line-format= --unchanged-line-format= <(echo "$packages") <(echo "$installed_packages"))
+		if [[ -n $removes ]]; then
+			$package_manager -Rsn $confirm $removes
+		fi
+		;;
+	save)
+		installed_packages=$($package_manager -Qqe)
+		packages=$(cat $file)
+
+		# Create packages file if it doesn't exist
+		if [[ ! -f $file ]]; then
+			touch $file
+			echo Created new packages file at $file
+		fi
+		
+		# Only write package list to file if something's changed
+		diffs=$(diff --unchanged-line-format= <(echo "$packages") <(echo "$installed_packages"))
+		if [[ -n $diffs ]]; then
+			$package_manager -Qqe > $file
+		fi
+		;;
+	*)
+		echo "$help_msg"
+		;;
+esac
