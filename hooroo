@@ -1,31 +1,23 @@
 #!/bin/bash
 
-help_msg='hooroo - Synchronise your pacman packages with a file
+help_msg='hooroo - Synchronise your pacman and flatpak packages with files
 
 Usage:
   hooroo <command> [options]
 
 Commands:
-  apply			Bring system packages up to date with packages file
-  save			Bring packages file up to date with system packages
+  apply		Bring system packages up to date with packages file
+  save		Bring packages file up to date with system packages
 
 Options:
-  -f, --file		Packages file location
-  -h, --help		Show this help
-  --noconfirm		Do not ask for confirmation when upgrading packages
+  -h, --help	Show this help
+  -m, --mode {all, flatpak, pacman}
+  		What package managers to synchronise (default: all)
+  --noconfirm	Do not ask for confirmation when upgrading packages
 
-Default file locations:
-  $XDG_CONFIG_HOME/packages.txt
-  $HOME/.config/packages.txt'
-
-# Find if AUR helper is installed
-package_manager=pacman
-
-if [[ -x $(command -v paru) ]]; then
-	package_manager=paru
-elif [[ -x $(command -v yay) ]]; then
-	package_manager=yay
-fi
+Package file locations:
+  $XDG_CONFIG_HOME/hooroo/{flatpak,pacman}-packages.txt
+  $HOME/.config/hooroo/{flatpak,pacman}-packages.txt'
 
 # Find who the actual user is
 if [[ -n $SUDO_USER ]]; then
@@ -44,8 +36,8 @@ if [[ -z $XDG_CONFIG_HOME ]]; then
 	XDG_CONFIG_HOME=$home/.config
 fi
 
-# Set default packages file location
-file=$XDG_CONFIG_HOME/packages.txt
+# Set default hooroo directory location
+hooroo_dir=$XDG_CONFIG_HOME/hooroo
 
 # Loop through args until there are no more
 while [[ $# -gt 0 ]]; do
@@ -55,22 +47,22 @@ while [[ $# -gt 0 ]]; do
 		apply)
 			cmd=apply
 			shift	;;
-		-f)
-			shift
-			file=$1
-			shift	;;
-		--file)
-			shift
-			file=$1
-			shift	;;
 		-h)
 			echo "$help_msg"
 			exit 0	;;
 		--help)
 			echo "$help_msg"
 			exit 0	;;
+		-m)
+			shift
+			mode=$1
+			shift	;;
+		--mode)
+			shift
+			mode=$1
+			shift	;;
 		--noconfirm)
-			confirm=--noconfirm
+			noconfirm=true
 			shift	;;
 		save)
 			cmd=save
@@ -81,38 +73,118 @@ while [[ $# -gt 0 ]]; do
 
 done
 
+# Set mode to all if it wasn't already set
+if [[ -z $mode ]]; then
+	mode=all
+fi
+
+# Define pacman specific variables
+if [[ $mode != "flatpak" ]]; then
+	pacman=pacman
+	pacman_file=$hooroo_dir/pacman-packages.txt
+
+	# Find if AUR helper is installed
+	if [[ -x $(command -v paru) ]]; then
+		pacman=paru
+	elif [[ -x $(command -v yay) ]]; then
+		pacman=yay
+	fi
+fi
+
+# Define flatpak specific variable
+if [[ $mode != "pacman" ]]; then
+	flatpak_file=$hooroo_dir/flatpak-packages.txt
+fi
+
 # Check for command
 case $cmd in
 	apply)
-		installed_packages=$($package_manager -Qqe)
-		packages=$(cat $file)
+		# Pacman specific commands
+		if [[ $mode != "flatpak" ]]; then
+			installed_packages=$($pacman -Qqe)
+			packages=$(cat $pacman_file)
 
-		# Install packages in the packages file that aren't explicitly installed
-		installs=$(diff --old-line-format= --unchanged-line-format= <(echo "$installed_packages") <(echo "$packages"))
-		if [[ -n $installs ]]; then
-			$package_manager -Sy $confirm $installs
+			if [[ -n $noconfirm ]]; then
+				confirm=--noconfirm
+			fi
+
+			# Install packages in the packages file that aren't explicitly installed
+			pacman_installs=$(diff --old-line-format= --unchanged-line-format= <(echo "$installed_packages") <(echo "$packages"))
+			if [[ -n $pacman_installs ]]; then
+				$pacman -Sy $confirm $pacman_installs
+			fi
+
+			# Uninstall explicitly installed packages not in the packages file, and unneeded dependencies
+			pacman_uninstalls=$(diff --old-line-format= --unchanged-line-format= <(echo "$packages") <(echo "$installed_packages"))
+			if [[ -n $pacman_uninstalls ]]; then
+				$pacman -Rsn $confirm $pacman_uninstalls
+			fi
 		fi
 
-		# Remove explicitly installed packages not in the packages file, and unneeded dependencies
-		removes=$(diff --old-line-format= --unchanged-line-format= <(echo "$packages") <(echo "$installed_packages"))
-		if [[ -n $removes ]]; then
-			$package_manager -Rsn $confirm $removes
+		# Flatpak specific commands
+		if [[ $mode != "pacman" ]]; then
+			installed_flatpaks=$(flatpak list --app --columns=ref)
+			flatpaks=$(cat $flatpak_file)
+
+			if [[ -n $noconfirm ]]; then
+				interactive=--noninteractive
+			fi
+
+			# Install packages in the packages file that aren't explicitly installed
+			flatpak_installs=$(diff --old-line-format= --unchanged-line-format= <(echo "$installed_flatpaks") <(echo "$flatpaks"))
+			if [[ -n $flatpak_installs ]]; then
+				flatpak install $interactive $flatpak_installs
+			fi
+
+			# Uninstall explicitly installed flatpaks not in the flatpaks file, and unneeded dependencies
+			flatpak_uninstalls=$(diff --old-line-format= --unchanged-line-format= <(echo "$flatpaks") <(echo "$installed_flatpaks"))
+			if [[ -n $flatpak_uninstalls ]]; then
+				flatpak uninstall $interactive $flatpak_uninstalls
+			fi
+
 		fi
 		;;
 	save)
-		installed_packages=$($package_manager -Qqe)
-		packages=$(cat $file)
-
-		# Create packages file if it doesn't exist
-		if [[ ! -f $file ]]; then
-			touch $file
-			echo Created new packages file at $file
+		# Create hooroo directory if it doesn't exist
+		if [[ ! -d $hooroo_dir ]]; then
+			mkdir -p $hooroo_dir
+			echo Created new package files directory at $hooroo_dir
 		fi
+
+		# Pacman specific commands
+		if [[ $mode != "flatpak" ]]; then
+			# Create pacman packages file if it doesn't exist
+			if [[ ! -f $pacman_file ]]; then
+				touch $pacman_file
+				echo Created new pacman packages file at $pacman_file
+			fi
+
+			installed_packages=$($pacman -Qqe)
+			packages=$(cat $pacman_file)
+
+			# Only write pacman package list to file if something's changed
+			pacman_diff=$(diff --unchanged-line-format= <(echo "$packages") <(echo "$installed_packages"))
+			if [[ -n $pacman_diff ]]; then
+				$pacman -Qqe > $pacman_file
+			fi
+		fi
+
+		# Flatpak specific commands
+		if [[ $mode != "pacman" ]]; then
+			# Create flatpak apps file if it doesn't exist
+			if [[ ! -f $flatpak_file ]]; then
+				touch $flatpak_file
+				echo Created new flatpak packages file at $flatpak_file
+			fi
+
+			installed_flatpaks=$(flatpak list --app --columns=ref)
+			flatpaks=$(cat $flatpak_file)
 		
-		# Only write package list to file if something's changed
-		diffs=$(diff --unchanged-line-format= <(echo "$packages") <(echo "$installed_packages"))
-		if [[ -n $diffs ]]; then
-			$package_manager -Qqe > $file
+			# Only write flatpak app list to file if something's changed
+			flatpak_diff=$(diff --unchanged-line-format= <(echo "$flatpaks") <(echo "$installed_flatpaks"))
+			if [[ -n $flatpak_diff ]]; then
+				flatpak list --app --columns=ref > $flatpak_file
+			fi
 		fi
 		;;
 	*)

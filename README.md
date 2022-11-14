@@ -2,22 +2,29 @@
 
 [![hooroo](https://img.shields.io/aur/version/hooroo)](https://aur.archlinux.org/packages/hooroo)
 
-Hooroo lets you synchronise your pacman packages with a file.
+Hooroo lets you synchronise your pacman and flatpak packages with files.
 It works with pacman, paru and yay.
 
 ## Installation
 Hooroo is available in the [AUR](https://aur.archlinux.org/packages/hooroo).
 
 ## Usage
-`hooroo apply` brings your system's packages up to date with your package file.
+`hooroo apply` brings your system's packages up to date with your package files.
 
-It installs packages in your package file that are not explicitly installed, and removes packages that are explicitly installed, but are not in your package file, or are unneeded dependencies.
+It installs packages in your package files that are not installed, and removes packages that are not in your package files.
 
-`hooroo save` brings your packages file up to date with your system's packages.
+`hooroo save` brings your package files up to date with your system's packages.
 
-It updates your package file with a list of explicitly installed packages.
+It updates your package files with a list of packages.
 
-The default package file location is `$XDG_CONFIG_HOME/packages.txt` or `$HOME/.config/packages.txt`, but it can be changed with the `-f` or `--file` flags.
+By default, hooroo synchronises both pacman and flatpak packages. To synchronise only one of them, use the `-m` or `--mode` flags.
+
+## Details
+Hooroo creates separate pacman and flatpak package files.
+
+The package files are stored in `$XDG_CONFIG_HOME/hooroo` or `$HOME/.config/hooroo`
+
+The pacman packages file contains explicitly installed packages, and the flatpak packages file contains installed apps.
 
 ## Acknowledgements
-This is heavily based on [pacmanfile](https://github.com/cloudlena/pacmanfile), thanks!
+Hooroo is heavily based on [pacmanfile](https://github.com/cloudlena/pacmanfile), thanks!

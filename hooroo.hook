@@ -8,4 +8,4 @@ Target = *
 [Action]
 Description = Updating the packages file...
 When = PostTransaction
-Exec = /usr/bin/hooroo save
+Exec = /usr/bin/hooroo save --mode pacman
