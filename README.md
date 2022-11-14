@@ -17,7 +17,9 @@ It installs packages in your package files that are not installed, and removes p
 
 It updates your package files with a list of packages.
 
-By default, hooroo synchronises both pacman and flatpak packages. To synchronise only one of them, use the `-m` or `--mode` flags.
+By default, hooroo synchronises both pacman and flatpak packages, if they are installed.
+
+To synchronise only one of them, use the `-m` or `--mode` flags.
 
 ## Details
 Hooroo creates separate pacman and flatpak package files.
