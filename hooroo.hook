@@ -2,7 +2,6 @@
 Type = Package
 Operation = Install
 Operation = Remove
-Operation = Upgrade
 Target = *
 
 [Action]
