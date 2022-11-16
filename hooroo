@@ -13,7 +13,8 @@ Options:
   -h, --help	Show this help
   -m, --mode {all, apt, flatpak, pacman}
   		What package manager to synchronise (default: all)
-  --noconfirm	Do not ask for confirmation when upgrading packages'
+  --noconfirm, --yes
+  		Do not ask for confirmation when upgrading packages'
 
 # Find who the actual user is
 if [[ -n $SUDO_USER ]]; then
@@ -43,6 +44,9 @@ while [[ $# -gt 0 ]]; do
 		apply)
 			cmd=apply
 			shift	;;
+		save)
+			cmd=save
+			shift	;;
 		-h)
 			echo "$help_msg"
 			exit 0	;;
@@ -60,8 +64,8 @@ while [[ $# -gt 0 ]]; do
 		--noconfirm)
 			noconfirm=true
 			shift	;;
-		save)
-			cmd=save
+		--yes)
+			noconfirm=true
 			shift	;;
 		*)
 			shift	;;
