@@ -23,7 +23,7 @@ By default, hooroo synchronises pacman, apt and flatpak packages, if they are in
 To synchronise only one of them, use the `-m` or `--mode` flags.
 
 ## Details
-Hooroo creates separate pacman and flatpak package files.
+Hooroo creates separate pacman, apt and flatpak package files.
 
 The package files are stored in `$XDG_CONFIG_HOME/hooroo` or `$HOME/.config/hooroo`
 
