@@ -1,6 +1,6 @@
 #!/bin/bash
 
-help_msg='hooroo - Synchronise your pacman and flatpak packages with files
+help_msg='hooroo - Synchronise your packages with a file
 
 Usage:
   hooroo <command> [options]
@@ -11,8 +11,8 @@ Commands:
 
 Options:
   -h, --help	Show this help
-  -m, --mode {all, flatpak, pacman}
-  		What package managers to synchronise (default: all)
+  -m, --mode {all, apt, flatpak, pacman}
+  		What package manager to synchronise (default: all)
   --noconfirm	Do not ask for confirmation when upgrading packages'
 
 # Find who the actual user is
@@ -70,41 +70,57 @@ while [[ $# -gt 0 ]]; do
 done
 
 # Read mode argument to set pacman_mode and flatpak_mode
-if [[ -z $mode ]]; then
+if [[ -z $mode || $mode = all ]]; then
 	pacman_mode=true
+	apt_mode=true
 	flatpak_mode=true
 elif [[ $mode = pacman ]]; then
 	pacman_mode=true
+elif [[ $mode = apt ]]; then
+	apt_mode=true
 elif [[ $mode = flatpak ]]; then
 	flatpak_mode=true
 fi
 
-# Check that pacman exists if pacman_mode was set
-if [[ -n $pacman_mode && ! -x $(command -v pacman) ]]; then
-	unset pacman_mode
-fi
-
-# Check that flatpak exists if flatpak_mode was set
-if [[ -n $flatpak_mode && ! -x $(command -v flatpak) ]]; then
-	unset flatpak_mode
-fi
-
-# Define pacman specific variables
+# Pacman mode specific commands
 if [[ -n $pacman_mode ]]; then
-	pacman_cmd=pacman
-	pacman_file=$hooroo_dir/pacman-packages.txt
+	# Check that pacman exists
+	if [[ -x $(command -v pacman) ]]; then
+		# Define pacman specific variables
+		pacman_cmd=pacman
+		pacman_file=$hooroo_dir/pacman-packages.txt
 
-	# Find if AUR helper is installed
-	if [[ -x $(command -v paru) ]]; then
-		pacman_cmd=paru
-	elif [[ -x $(command -v yay) ]]; then
-		pacman_cmd=yay
+		# Find if AUR helper is installed
+		if [[ -x $(command -v paru) ]]; then
+			pacman_cmd=paru
+		elif [[ -x $(command -v yay) ]]; then
+			pacman_cmd=yay
+		fi
+	else
+		unset pacman_mode
 	fi
 fi
 
-# Define flatpak specific variable
+# Apt mode specific commands
+if [[ -n $apt_mode ]]; then
+	# Check that apt-get exists
+	if [[ -x $(command -v apt-get) ]]; then
+		# Define apt specific variable
+		apt_file=$hooroo_dir/apt-packages.txt
+	else
+		unset apt_mode
+	fi
+fi
+
+# Flatpak mode specific commands
 if [[ -n $flatpak_mode ]]; then
-	flatpak_file=$hooroo_dir/flatpak-packages.txt
+	# Check that flatpak exists
+	if [[ -x $(command -v flatpak) ]]; then
+		# Define flatpak specific variable
+		flatpak_file=$hooroo_dir/flatpak-packages.txt
+	else
+		unset flatpak_mode
+	fi
 fi
 
 # Check for command
@@ -119,16 +135,39 @@ case $cmd in
 				confirm=--noconfirm
 			fi
 
-			# Install packages in the packages file that aren't explicitly installed
-			pacman_installs=$(diff --old-line-format= --unchanged-line-format= <(echo "$installed_packages") <(echo "$packages"))
-			if [[ -n $pacman_installs ]]; then
+			# Install packages in the pacman packages file that aren't explicitly installed
+			installs=$(diff --old-line-format= --unchanged-line-format= <(echo "$installed_packages") <(echo "$packages"))
+			if [[ -n $installs ]]; then
 				$pacman_cmd -Sy $confirm $pacman_installs
 			fi
 
-			# Uninstall explicitly installed packages not in the packages file, and unneeded dependencies
-			pacman_uninstalls=$(diff --old-line-format= --unchanged-line-format= <(echo "$packages") <(echo "$installed_packages"))
-			if [[ -n $pacman_uninstalls ]]; then
+			# Uninstall explicitly installed pacman packages not in the packages file, and unneeded dependencies
+			uninstalls=$(diff --old-line-format= --unchanged-line-format= <(echo "$packages") <(echo "$installed_packages"))
+			if [[ -n $uninstalls ]]; then
 				$pacman_cmd -Rsn $confirm $pacman_uninstalls
+			fi
+		fi
+
+		# Apt specific commands
+		if [[ -n $apt_mode ]]; then
+			installed_packages=$(apt-mark showmanual)
+			packages=$(cat $apt_file)
+
+			if [[ -n $noconfirm ]]; then
+				yes=--yes
+			fi
+
+			# Install packages in the apt packages file that aren't explicitly installed
+			installs=$(diff --old-line-format= --unchanged-line-format= <(echo "$installed_packages") <(echo "$packages"))
+			if [[ -n $installs ]]; then
+				apt-get update
+				apt-get install $yes $apt_installs
+			fi
+
+			# Uninstall explicitly installed apt packages not in the packages file, and unneeded dependencies
+			uninstalls=$(diff --old-line-format= --unchanged-line-format= <(echo "$packages") <(echo "$installed_packages"))
+			if [[ -n $uninstalls ]]; then
+				apt-get autoremove --purge $yes $apt_uninstalls
 			fi
 		fi
 
@@ -142,14 +181,14 @@ case $cmd in
 			fi
 
 			# Install packages in the packages file that aren't explicitly installed
-			flatpak_installs=$(diff --old-line-format= --unchanged-line-format= <(echo "$installed_flatpaks") <(echo "$flatpaks"))
-			if [[ -n $flatpak_installs ]]; then
+			installs=$(diff --old-line-format= --unchanged-line-format= <(echo "$installed_flatpaks") <(echo "$flatpaks"))
+			if [[ -n $installs ]]; then
 				flatpak install $interactive $flatpak_installs
 			fi
 
 			# Uninstall explicitly installed flatpaks not in the flatpaks file, and unneeded dependencies
-			flatpak_uninstalls=$(diff --old-line-format= --unchanged-line-format= <(echo "$flatpaks") <(echo "$installed_flatpaks"))
-			if [[ -n $flatpak_uninstalls ]]; then
+			uninstalls=$(diff --old-line-format= --unchanged-line-format= <(echo "$flatpaks") <(echo "$installed_flatpaks"))
+			if [[ -n $uninstalls ]]; then
 				flatpak uninstall $interactive $flatpak_uninstalls
 			fi
 
@@ -174,9 +213,27 @@ case $cmd in
 			packages=$(cat $pacman_file)
 
 			# Only write pacman package list to file if something's changed
-			pacman_diff=$(diff --unchanged-line-format= <(echo "$packages") <(echo "$installed_packages"))
-			if [[ -n $pacman_diff ]]; then
+			diffs=$(diff --unchanged-line-format= <(echo "$packages") <(echo "$installed_packages"))
+			if [[ -n $diffs ]]; then
 				$pacman_cmd -Qqe > $pacman_file
+			fi
+		fi
+
+		# Apt specific commands
+		if [[ -n $apt_mode ]]; then
+			# Create apt packages file if it doesn't exist
+			if [[ ! -f $apt_file ]]; then
+				touch $apt_file
+				echo Created new apt packages file at $apt_file
+			fi
+
+			installed_packages=$(apt-mark showmanual)
+			packages=$(cat $apt_file)
+
+			# Only write apt package list to file if something's changed
+			diffs=$(diff --unchanged-line-format= <(echo "$packages") <(echo "$installed_packages"))
+			if [[ -n $diffs ]]; then
+				apt-mark showmanual > $apt_file
 			fi
 		fi
 
@@ -192,8 +249,8 @@ case $cmd in
 			flatpaks=$(cat $flatpak_file)
 		
 			# Only write flatpak app list to file if something's changed
-			flatpak_diff=$(diff --unchanged-line-format= <(echo "$flatpaks") <(echo "$installed_flatpaks"))
-			if [[ -n $flatpak_diff ]]; then
+			diffs=$(diff --unchanged-line-format= <(echo "$flatpaks") <(echo "$installed_flatpaks"))
+			if [[ -n $diffs ]]; then
 				flatpak list --app --columns=ref > $flatpak_file
 			fi
 		fi
