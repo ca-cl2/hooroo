@@ -1,12 +1,13 @@
 # hooroo
 
-[![hooroo](https://img.shields.io/aur/version/hooroo)](https://aur.archlinux.org/packages/hooroo)
+[![AUR package](https://repology.org/badge/version-for-repo/aur/hooroo.svg)](https://aur.archlinux.org/packages/hooroo)
+[![MPR package](https://repology.org/badge/version-for-repo/mpr/hooroo.svg)](https://mpr.makedeb.org/packages/hooroo)
 
 Hooroo lets you synchronise your packages with a file.
 It works with pacman (including paru and yay), apt and flatpak.
 
 ## Installation
-Hooroo is available in the [AUR](https://aur.archlinux.org/packages/hooroo).
+Hooroo is available in the [AUR](https://aur.archlinux.org/packages/hooroo) and the [MPR](https://mpr.makedeb.org/packages/hooroo).
 
 ## Usage
 `hooroo apply` brings your system's packages up to date with your package files.
