@@ -132,7 +132,7 @@ case $cmd in
 	apply)
 		# Pacman specific commands
 		if [[ -n $pacman_mode ]]; then
-			installed_packages=$($pacman_cmd -Qqe)
+			installed_packages=$($pacman_cmd -Qqe) # Only show explicitly installed packages
 			packages=$(cat $pacman_file)
 
 			if [[ -n $noconfirm ]]; then
@@ -145,7 +145,7 @@ case $cmd in
 				$pacman_cmd -Sy $confirm $installs
 			fi
 
-			# Uninstall explicitly installed pacman packages not in the packages file, and unneeded dependencies
+			# Uninstall explicitly installed packages not in the pacman packages file, and unneeded dependencies
 			uninstalls=$(diff --old-line-format= --unchanged-line-format= <(echo "$packages") <(echo "$installed_packages"))
 			if [[ -n $uninstalls ]]; then
 				$pacman_cmd -Rsn $confirm $uninstalls
@@ -154,7 +154,7 @@ case $cmd in
 
 		# Apt specific commands
 		if [[ -n $apt_mode ]]; then
-			installed_packages=$(apt-mark showmanual)
+			installed_packages=$(apt-mark showmanual) # Only show explicitly installed packages
 			packages=$(cat $apt_file)
 
 			if [[ -n $noconfirm ]]; then
@@ -167,7 +167,7 @@ case $cmd in
 				apt-get update && apt-get install $yes $installs
 			fi
 
-			# Uninstall explicitly installed apt packages not in the packages file, and unneeded dependencies
+			# Uninstall explicitly installed packages not in the apt packages file, and unneeded dependencies
 			uninstalls=$(diff --old-line-format= --unchanged-line-format= <(echo "$packages") <(echo "$installed_packages"))
 			if [[ -n $uninstalls ]]; then
 				apt-get autoremove --purge $yes $uninstalls
@@ -176,21 +176,21 @@ case $cmd in
 
 		# Flatpak specific commands
 		if [[ -n $flatpak_mode ]]; then
-			installed_flatpaks=$(flatpak list --app --columns=ref)
-			flatpaks=$(cat $flatpak_file)
+			installed_packages=$(flatpak list --app --columns=ref) # Only show apps, not runtimes
+			packages=$(cat $flatpak_file)
 
 			if [[ -n $noconfirm ]]; then
 				interactive=--noninteractive
 			fi
 
-			# Install packages in the packages file that aren't explicitly installed
-			installs=$(diff --old-line-format= --unchanged-line-format= <(echo "$installed_flatpaks") <(echo "$flatpaks"))
+			# Install apps in the flatpak packages file that aren't explicitly installed
+			installs=$(diff --old-line-format= --unchanged-line-format= <(echo "$installed_packages") <(echo "$packages"))
 			if [[ -n $installs ]]; then
 				flatpak install $interactive $installs
 			fi
 
-			# Uninstall explicitly installed flatpaks not in the flatpaks file, and unneeded dependencies
-			uninstalls=$(diff --old-line-format= --unchanged-line-format= <(echo "$flatpaks") <(echo "$installed_flatpaks"))
+			# Uninstall explicitly installed apps not in the flatpak packages file, and unneeded dependencies
+			uninstalls=$(diff --old-line-format= --unchanged-line-format= <(echo "$packages") <(echo "$installed_packages"))
 			if [[ -n $uninstalls ]]; then
 				flatpak uninstall $interactive $uninstalls
 			fi
@@ -212,7 +212,7 @@ case $cmd in
 				echo Created new pacman packages file at $pacman_file
 			fi
 
-			installed_packages=$($pacman_cmd -Qqe)
+			installed_packages=$($pacman_cmd -Qqe) # Only show explicitly installed packages
 			packages=$(cat $pacman_file)
 
 			# Only write pacman package list to file if something's changed
@@ -230,7 +230,7 @@ case $cmd in
 				echo Created new apt packages file at $apt_file
 			fi
 
-			installed_packages=$(apt-mark showmanual)
+			installed_packages=$(apt-mark showmanual) # Only show explicitly installed packages
 			packages=$(cat $apt_file)
 
 			# Only write apt package list to file if something's changed
@@ -248,11 +248,11 @@ case $cmd in
 				echo Created new flatpak packages file at $flatpak_file
 			fi
 
-			installed_flatpaks=$(flatpak list --app --columns=ref)
-			flatpaks=$(cat $flatpak_file)
+			installed_packages=$(flatpak list --app --columns=ref) # Only show apps, not runtimes
+			packages=$(cat $flatpak_file)
 		
-			# Only write flatpak app list to file if something's changed
-			diffs=$(diff --unchanged-line-format= <(echo "$flatpaks") <(echo "$installed_flatpaks"))
+			# Only write flatpak package list to file if something's changed
+			diffs=$(diff --unchanged-line-format= <(echo "$packages") <(echo "$installed_packages"))
 			if [[ -n $diffs ]]; then
 				flatpak list --app --columns=ref > $flatpak_file
 			fi
