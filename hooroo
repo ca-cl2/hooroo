@@ -142,13 +142,13 @@ case $cmd in
 			# Install packages in the pacman packages file that aren't explicitly installed
 			installs=$(diff --old-line-format= --unchanged-line-format= <(echo "$installed_packages") <(echo "$packages"))
 			if [[ -n $installs ]]; then
-				$pacman_cmd -Sy $confirm $pacman_installs
+				$pacman_cmd -Sy $confirm $installs
 			fi
 
 			# Uninstall explicitly installed pacman packages not in the packages file, and unneeded dependencies
 			uninstalls=$(diff --old-line-format= --unchanged-line-format= <(echo "$packages") <(echo "$installed_packages"))
 			if [[ -n $uninstalls ]]; then
-				$pacman_cmd -Rsn $confirm $pacman_uninstalls
+				$pacman_cmd -Rsn $confirm $uninstalls
 			fi
 		fi
 
@@ -164,14 +164,13 @@ case $cmd in
 			# Install packages in the apt packages file that aren't explicitly installed
 			installs=$(diff --old-line-format= --unchanged-line-format= <(echo "$installed_packages") <(echo "$packages"))
 			if [[ -n $installs ]]; then
-				apt-get update
-				apt-get install $yes $apt_installs
+				apt-get update && apt-get install $yes $installs
 			fi
 
 			# Uninstall explicitly installed apt packages not in the packages file, and unneeded dependencies
 			uninstalls=$(diff --old-line-format= --unchanged-line-format= <(echo "$packages") <(echo "$installed_packages"))
 			if [[ -n $uninstalls ]]; then
-				apt-get autoremove --purge $yes $apt_uninstalls
+				apt-get autoremove --purge $yes $uninstalls
 			fi
 		fi
 
@@ -187,13 +186,13 @@ case $cmd in
 			# Install packages in the packages file that aren't explicitly installed
 			installs=$(diff --old-line-format= --unchanged-line-format= <(echo "$installed_flatpaks") <(echo "$flatpaks"))
 			if [[ -n $installs ]]; then
-				flatpak install $interactive $flatpak_installs
+				flatpak install $interactive $installs
 			fi
 
 			# Uninstall explicitly installed flatpaks not in the flatpaks file, and unneeded dependencies
 			uninstalls=$(diff --old-line-format= --unchanged-line-format= <(echo "$flatpaks") <(echo "$installed_flatpaks"))
 			if [[ -n $uninstalls ]]; then
-				flatpak uninstall $interactive $flatpak_uninstalls
+				flatpak uninstall $interactive $uninstalls
 			fi
 
 		fi
