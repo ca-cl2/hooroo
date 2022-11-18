@@ -4,7 +4,7 @@
 [![MPR package](https://repology.org/badge/version-for-repo/mpr/hooroo.svg)](https://mpr.makedeb.org/packages/hooroo)
 
 Hooroo lets you synchronise your packages with a file.
-It works with pacman (including paru and yay), apt and flatpak.
+It works with apt, flatpak and pacman (including paru and yay).
 
 ## Installation
 Hooroo is available in the [AUR](https://aur.archlinux.org/packages/hooroo) and the [MPR](https://mpr.makedeb.org/packages/hooroo).
@@ -18,16 +18,18 @@ It installs packages in your package files that are not installed, and removes p
 
 It updates your package files with a list of packages.
 
-By default, hooroo synchronises pacman, apt and flatpak packages, if they are installed.
+By default, hooroo synchronises apt, flatpak and pacman packages, if they are installed.
 
 To synchronise only one of them, use the `-m` or `--mode` flags.
 
 ## Details
-Hooroo creates separate pacman, apt and flatpak package files.
+Hooroo creates separate apt, flatpak and pacman package files.
 
 The package files are stored in `$XDG_CONFIG_HOME/hooroo` or `$HOME/.config/hooroo`
 
-The pacman and apt package files contains explicitly installed packages, and the flatpak packages file contains installed apps.
+The apt and pacman package files contain explicitly installed packages, and the flatpak packages file contains installed apps.
+
+The apt and pacman package files are automatically updated when packages are installed or removed.
 
 ## Acknowledgements
 Hooroo is based on [pacmanfile](https://github.com/cloudlena/pacmanfile), thanks!
