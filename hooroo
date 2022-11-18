@@ -75,34 +75,15 @@ done
 
 # Read mode argument to set pacman_mode and flatpak_mode
 if [[ -z $mode || $mode = all ]]; then
-	pacman_mode=true
 	apt_mode=true
 	flatpak_mode=true
-elif [[ $mode = pacman ]]; then
 	pacman_mode=true
 elif [[ $mode = apt ]]; then
 	apt_mode=true
 elif [[ $mode = flatpak ]]; then
 	flatpak_mode=true
-fi
-
-# Pacman mode specific commands
-if [[ -n $pacman_mode ]]; then
-	# Check that pacman exists
-	if [[ -x $(command -v pacman) ]]; then
-		# Define pacman specific variables
-		pacman_cmd=pacman
-		pacman_file=$hooroo_dir/pacman-packages.txt
-
-		# Find if AUR helper is installed
-		if [[ -x $(command -v paru) ]]; then
-			pacman_cmd=paru
-		elif [[ -x $(command -v yay) ]]; then
-			pacman_cmd=yay
-		fi
-	else
-		unset pacman_mode
-	fi
+elif [[ $mode = pacman ]]; then
+	pacman_mode=true
 fi
 
 # Apt mode specific commands
@@ -127,31 +108,28 @@ if [[ -n $flatpak_mode ]]; then
 	fi
 fi
 
+# Pacman mode specific commands
+if [[ -n $pacman_mode ]]; then
+	# Check that pacman exists
+	if [[ -x $(command -v pacman) ]]; then
+		# Define pacman specific variables
+		pacman_cmd=pacman
+		pacman_file=$hooroo_dir/pacman-packages.txt
+
+		# Find if AUR helper is installed
+		if [[ -x $(command -v paru) ]]; then
+			pacman_cmd=paru
+		elif [[ -x $(command -v yay) ]]; then
+			pacman_cmd=yay
+		fi
+	else
+		unset pacman_mode
+	fi
+fi
+
 # Check for command
 case $cmd in
 	apply)
-		# Pacman specific commands
-		if [[ -n $pacman_mode ]]; then
-			installed_packages=$($pacman_cmd -Qqe) # Only show explicitly installed packages
-			packages=$(cat $pacman_file)
-
-			if [[ -n $noconfirm ]]; then
-				confirm=--noconfirm
-			fi
-
-			# Install packages in the pacman packages file that aren't explicitly installed
-			installs=$(diff --old-line-format= --unchanged-line-format= <(echo "$installed_packages") <(echo "$packages"))
-			if [[ -n $installs ]]; then
-				$pacman_cmd -Sy $confirm $installs
-			fi
-
-			# Uninstall explicitly installed packages not in the pacman packages file, and unneeded dependencies
-			uninstalls=$(diff --old-line-format= --unchanged-line-format= <(echo "$packages") <(echo "$installed_packages"))
-			if [[ -n $uninstalls ]]; then
-				$pacman_cmd -Rsn $confirm $uninstalls
-			fi
-		fi
-
 		# Apt specific commands
 		if [[ -n $apt_mode ]]; then
 			installed_packages=$(apt-mark showmanual) # Only show explicitly installed packages
@@ -167,10 +145,10 @@ case $cmd in
 				apt-get update && apt-get install $yes $installs
 			fi
 
-			# Uninstall explicitly installed packages not in the apt packages file, and unneeded dependencies
-			uninstalls=$(diff --old-line-format= --unchanged-line-format= <(echo "$packages") <(echo "$installed_packages"))
-			if [[ -n $uninstalls ]]; then
-				apt-get autoremove --purge $yes $uninstalls
+			# Remove explicitly installed packages not in the apt packages file, and unneeded dependencies
+			removes=$(diff --old-line-format= --unchanged-line-format= <(echo "$packages") <(echo "$installed_packages"))
+			if [[ -n $removes ]]; then
+				apt-get autoremove --purge $yes $removes
 			fi
 		fi
 
@@ -189,12 +167,34 @@ case $cmd in
 				flatpak install $interactive $installs
 			fi
 
-			# Uninstall explicitly installed apps not in the flatpak packages file, and unneeded dependencies
-			uninstalls=$(diff --old-line-format= --unchanged-line-format= <(echo "$packages") <(echo "$installed_packages"))
-			if [[ -n $uninstalls ]]; then
-				flatpak uninstall $interactive $uninstalls
+			# Remove explicitly installed apps not in the flatpak packages file, and unneeded dependencies
+			removes=$(diff --old-line-format= --unchanged-line-format= <(echo "$packages") <(echo "$installed_packages"))
+			if [[ -n $removes ]]; then
+				flatpak remove $interactive $removes
 			fi
 
+		fi
+
+		# Pacman specific commands
+		if [[ -n $pacman_mode ]]; then
+			installed_packages=$($pacman_cmd -Qqe) # Only show explicitly installed packages
+			packages=$(cat $pacman_file)
+
+			if [[ -n $noconfirm ]]; then
+				confirm=--noconfirm
+			fi
+
+			# Install packages in the pacman packages file that aren't explicitly installed
+			installs=$(diff --old-line-format= --unchanged-line-format= <(echo "$installed_packages") <(echo "$packages"))
+			if [[ -n $installs ]]; then
+				$pacman_cmd -Sy $confirm $installs
+			fi
+
+			# Remove explicitly installed packages not in the pacman packages file, and unneeded dependencies
+			removes=$(diff --old-line-format= --unchanged-line-format= <(echo "$packages") <(echo "$installed_packages"))
+			if [[ -n $removes ]]; then
+				$pacman_cmd -Rsn $confirm $removes
+			fi
 		fi
 		;;
 	save)
@@ -202,24 +202,6 @@ case $cmd in
 		if [[ ! -d $hooroo_dir ]]; then
 			mkdir -p $hooroo_dir
 			echo Created new package files directory at $hooroo_dir
-		fi
-
-		# Pacman specific commands
-		if [[ -n $pacman_mode ]]; then
-			# Create pacman packages file if it doesn't exist
-			if [[ ! -f $pacman_file ]]; then
-				touch $pacman_file
-				echo Created new pacman packages file at $pacman_file
-			fi
-
-			installed_packages=$($pacman_cmd -Qqe) # Only show explicitly installed packages
-			packages=$(cat $pacman_file)
-
-			# Only write pacman package list to file if something's changed
-			diffs=$(diff --unchanged-line-format= <(echo "$packages") <(echo "$installed_packages"))
-			if [[ -n $diffs ]]; then
-				$pacman_cmd -Qqe > $pacman_file
-			fi
 		fi
 
 		# Apt specific commands
@@ -255,6 +237,24 @@ case $cmd in
 			diffs=$(diff --unchanged-line-format= <(echo "$packages") <(echo "$installed_packages"))
 			if [[ -n $diffs ]]; then
 				flatpak list --app --columns=ref > $flatpak_file
+			fi
+		fi
+
+		# Pacman specific commands
+		if [[ -n $pacman_mode ]]; then
+			# Create pacman packages file if it doesn't exist
+			if [[ ! -f $pacman_file ]]; then
+				touch $pacman_file
+				echo Created new pacman packages file at $pacman_file
+			fi
+
+			installed_packages=$($pacman_cmd -Qqe) # Only show explicitly installed packages
+			packages=$(cat $pacman_file)
+
+			# Only write pacman package list to file if something's changed
+			diffs=$(diff --unchanged-line-format= <(echo "$packages") <(echo "$installed_packages"))
+			if [[ -n $diffs ]]; then
+				$pacman_cmd -Qqe > $pacman_file
 			fi
 		fi
 		;;
