@@ -10,7 +10,7 @@ _hooroo_completions() {
 	fi
 
 	# Save completions list
-	COMPREPLY=($(compgen -W "$completions" -- ${COMP_WORDS[$COMP_CWORD]}))
+	COMPREPLY=( "$(compgen -W "$completions" -- "${COMP_WORDS[$COMP_CWORD]}")" )
 }
 
 complete -F _hooroo_completions hooroo
