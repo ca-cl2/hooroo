@@ -32,7 +32,7 @@ home=$(getent passwd "$user" | cut -d: -f6)
 hooroo_dir=${XDG_CONFIG_HOME:-$home/.config}/hooroo
 
 # Loop through args until there are no more
-while [[ $# -gt 0 ]]; do
+while (( $# > 0 )); do
 	# Check for commands and options
 	case $1 in
 		apply)
@@ -41,25 +41,14 @@ while [[ $# -gt 0 ]]; do
 		save)
 			cmd=save
 			shift	;;
-		-h)
+		-h | --help)
 			echo "$help_msg"
 			exit 0	;;
-		--help)
-			echo "$help_msg"
-			exit 0	;;
-		-l)
+		-l | --location)
 			shift
 			location=$1
 			shift	;;
-		--location)
-			shift
-			location=$1
-			shift	;;
-		-m)
-			shift
-			mode=$1
-			shift	;;
-		--mode)
+		-m | --mode)
 			shift
 			mode=$1
 			shift	;;
@@ -83,20 +72,20 @@ fi
 # Set apt mode if mode is all or apt and apt-get exists
 if [[ ($mode = all || $mode = apt) && -x $(command -v apt-get) ]]; then
 	apt_mode=true
-	((mode_count++))
+	(( mode_count++ ))
 fi
 
 # Set flatpak mode if mode is all or flatpak and flatpak exists
 if [[ ($mode = all || $mode = flatpak) && -x $(command -v flatpak) ]]; then
 	flatpak_mode=true
-	((mode_count++))
+	(( mode_count++ ))
 fi
 
 # Set pacman variables if mode is all or pacman and pacman exists
 if [[ ($mode = all || $mode = pacman) && -x $(command -v pacman) ]]; then
 	pacman_mode=true
 	pacman_cmd=pacman
-	((mode_count++))
+	(( mode_count++ ))
 
 	# Use AUR helper if installed
 	if [[ -x $(command -v paru) ]]; then
