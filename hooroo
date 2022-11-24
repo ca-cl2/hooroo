@@ -152,7 +152,7 @@ case $cmd in
 	apply)
 		# Exit if hooroo directory doesn't exist
 		if [[ ! -d $hooroo_dir ]]; then
-			echo "Error: $hooroo_dir: No such directory"
+			echo "hooroo: $hooroo_dir: No such directory"
 			exit 1
 		fi
 
@@ -160,7 +160,7 @@ case $cmd in
 		if [[ -n $apt_mode ]]; then
 			# Exit if apt file doesn't exist
 			if [[ ! -f $apt_file ]]; then
-				echo "Error: $apt_file: No such file"
+				echo "hooroo: $apt_file: No such file"
 				exit 1
 			fi
 
@@ -188,7 +188,7 @@ case $cmd in
 		if [[ -n $flatpak_mode ]]; then
 			# Exit if flatpak file doesn't exist
 			if [[ ! -f $flatpak_file ]]; then
-				echo "Error: $flatpak_file: No such file"
+				echo "hooroo: $flatpak_file: No such file"
 				exit 1
 			fi
 
@@ -217,7 +217,7 @@ case $cmd in
 		if [[ -n $pacman_mode ]]; then
 			# Exit if pacman file doesn't exist
 			if [[ ! -f $pacman_file ]]; then
-				echo "Error: $pacman_file: No such file"
+				echo "hooroo: $pacman_file: No such file"
 				exit 1
 			fi
 
