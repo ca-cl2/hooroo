@@ -228,16 +228,26 @@ case $cmd in
 	save)
 		# Create hooroo directory if it doesn't exist
 		if [[ ! -d $hooroo_dir ]]; then
-			mkdir -p "$hooroo_dir"
-			echo "Created new package files directory at $hooroo_dir"
+			if [[ ! -e $hooroo_dir ]]; then
+				mkdir -p "$hooroo_dir"
+				echo "hooroo: Created new directory '$hooroo_dir'"
+			else
+				echo "hooroo: Cannot create directory '$hooroo_dir': File exists"
+				exit 1
+			fi
 		fi
 
 		# Apt specific commands
 		if [[ -n $apt_mode ]]; then
 			# Create apt packages file if it doesn't exist
 			if [[ ! -f $apt_file ]]; then
-				touch "$apt_file"
-				echo "Created new apt packages file at $apt_file"
+				if [[ ! -e $apt_file ]]; then
+					touch "$apt_file"
+					echo "hooroo: Created new apt file '$apt_file'"
+				else
+					echo "hooroo: Cannot create apt file '$apt_file': File exists"
+					exit 1
+				fi
 			fi
 
 			installed_packages=$(apt-mark showmanual) # Only show explicitly installed packages
@@ -254,8 +264,13 @@ case $cmd in
 		if [[ -n $flatpak_mode ]]; then
 			# Create flatpak apps file if it doesn't exist
 			if [[ ! -f $flatpak_file ]]; then
-				touch "$flatpak_file"
-				echo "Created new flatpak packages file at $flatpak_file"
+				if [[ ! -e $flatpak_file ]]; then
+					touch "$flatpak_file"
+					echo "hooroo: Created new flatpak file '$flatpak_file'"
+				else
+					echo "hooroo: Cannot create flatpak file '$flatpak_file': File exists"
+					exit 1
+				fi
 			fi
 
 			installed_packages=$(flatpak list --app --columns=ref) # Only show apps, not runtimes
@@ -272,8 +287,13 @@ case $cmd in
 		if [[ -n $pacman_mode ]]; then
 			# Create pacman packages file if it doesn't exist
 			if [[ ! -f $pacman_file ]]; then
-				touch "$pacman_file"
-				echo "Created new pacman packages file at $pacman_file"
+				if [[ ! -e $pacman_file ]]; then
+					touch "$pacman_file"
+					echo "hooroo: Created new pacman file '$pacman_file'"
+				else
+					echo "hooroo: Cannot create pacman file '$pacman_file': File exists"
+					exit 1
+				fi
 			fi
 
 			installed_packages=$($pacman_cmd -Qqe) # Only show explicitly installed packages
