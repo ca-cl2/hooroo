@@ -28,13 +28,8 @@ fi
 # Find user's home directory from passwd file
 home=$(getent passwd "$user" | cut -d: -f6)
 
-# Set XDG config directory
-if [[ -z $XDG_CONFIG_HOME ]]; then
-	XDG_CONFIG_HOME=$home/.config
-fi
-
 # Set default hooroo directory location
-hooroo_dir=$XDG_CONFIG_HOME/hooroo
+hooroo_dir=${XDG_CONFIG_HOME:-$home/.config}/hooroo
 
 # Loop through args until there are no more
 while [[ $# -gt 0 ]]; do
