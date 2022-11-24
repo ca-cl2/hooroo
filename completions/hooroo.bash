@@ -5,11 +5,11 @@ _hooroo_completions() {
 	unset completions file
 
 	# Complete commands in first argument, and options after
-	if (( $COMP_CWORD == 1 )); then
+	if (( COMP_CWORD == 1 )); then
 		completions="apply save"
 	else
 		# Find previous option used
-		prev_opt=$(( $COMP_CWORD - 1 ))
+		prev_opt=$(( COMP_CWORD - 1 ))
 
 		# Use different completions for previous options used
 		case ${COMP_WORDS[$prev_opt]} in
