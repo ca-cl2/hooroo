@@ -10,11 +10,11 @@ Commands:
   save		Bring packages file up to date with system packages
 
 Options:
-  -h, --help	Show this help
+  -h, --help		Show this help
+  -l, --location	The file or directory with package lists
   -m, --mode {all, apt, flatpak, pacman}
-  		What package manager to synchronise (default: all)
-  --noconfirm, --yes
-  		Do not ask for confirmation when upgrading packages'
+			What package manager to synchronise (default: all)
+  --noconfirm, --yes	Do not ask for confirmation when upgrading packages'
 
 # Find who the actual user is
 if [[ -n $SUDO_USER ]]; then
@@ -38,7 +38,6 @@ hooroo_dir=$XDG_CONFIG_HOME/hooroo
 
 # Loop through args until there are no more
 while [[ $# -gt 0 ]]; do
-
 	# Check for commands and options
 	case $1 in
 		apply)
@@ -53,6 +52,14 @@ while [[ $# -gt 0 ]]; do
 		--help)
 			echo "$help_msg"
 			exit 0	;;
+		-l)
+			shift
+			location=$1
+			shift	;;
+		--location)
+			shift
+			location=$1
+			shift	;;
 		-m)
 			shift
 			mode=$1
@@ -73,57 +80,70 @@ while [[ $# -gt 0 ]]; do
 
 done
 
-# Read mode argument to set pacman_mode and flatpak_mode
-if [[ -z $mode || $mode = all ]]; then
-	apt_mode=true
-	flatpak_mode=true
-	pacman_mode=true
-elif [[ $mode = apt ]]; then
-	apt_mode=true
-elif [[ $mode = flatpak ]]; then
-	flatpak_mode=true
-elif [[ $mode = pacman ]]; then
-	pacman_mode=true
+# Set mode to all if not set
+if [[ -z $mode ]]; then
+	mode=all
 fi
 
-# Apt mode specific commands
+# Set apt mode if mode is all or apt and apt-get exists
+if [[ ($mode = all || $mode = apt) && -x $(command -v apt-get) ]]; then
+	apt_mode=true
+	((mode_count++))
+fi
+
+# Set flatpak mode if mode is all or flatpak and flatpak exists
+if [[ ($mode = all || $mode = flatpak) && -x $(command -v flatpak) ]]; then
+	flatpak_mode=true
+	((mode_count++))
+fi
+
+# Set pacman variables if mode is all or pacman and pacman exists
+if [[ ($mode = all || $mode = pacman) && -x $(command -v pacman) ]]; then
+	pacman_mode=true
+	pacman_cmd=pacman
+	((mode_count++))
+
+	# Use AUR helper if installed
+	if [[ -x $(command -v paru) ]]; then
+		pacman_cmd=paru
+	elif [[ -x $(command -v yay) ]]; then
+		pacman_cmd=yay
+	fi
+fi
+
+# Change hooroo directory if using multiple modes and location was given
+if [[ $mode_count -gt 1 && -n $location ]]; then
+	hooroo_dir=$location
+	unset location
+fi
+
+# Apt mode specific variable
 if [[ -n $apt_mode ]]; then
-	# Check that apt-get exists
-	if [[ -x $(command -v apt-get) ]]; then
-		# Define apt specific variable
+	# Use custom apt file if location was given
+	if [[ -z $location ]]; then
 		apt_file=$hooroo_dir/apt-packages.txt
 	else
-		unset apt_mode
+		apt_file=$location
 	fi
 fi
 
-# Flatpak mode specific commands
+# Flatpak mode specific variable
 if [[ -n $flatpak_mode ]]; then
-	# Check that flatpak exists
-	if [[ -x $(command -v flatpak) ]]; then
-		# Define flatpak specific variable
+	# Use custom flatpak file if location was given
+	if [[ -z $location ]]; then
 		flatpak_file=$hooroo_dir/flatpak-packages.txt
 	else
-		unset flatpak_mode
+		flatpak_file=$location
 	fi
 fi
 
-# Pacman mode specific commands
+# Pacman mode specific variable
 if [[ -n $pacman_mode ]]; then
-	# Check that pacman exists
-	if [[ -x $(command -v pacman) ]]; then
-		# Define pacman specific variables
-		pacman_cmd=pacman
+	# Use custom pacman file if location was given
+	if [[ -z $location ]]; then
 		pacman_file=$hooroo_dir/pacman-packages.txt
-
-		# Find if AUR helper is installed
-		if [[ -x $(command -v paru) ]]; then
-			pacman_cmd=paru
-		elif [[ -x $(command -v yay) ]]; then
-			pacman_cmd=yay
-		fi
 	else
-		unset pacman_mode
+		pacman_file=$location
 	fi
 fi
 

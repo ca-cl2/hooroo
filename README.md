@@ -22,6 +22,8 @@ By default, hooroo synchronises apt, flatpak and pacman packages, if they are in
 
 To synchronise only one of them, use the `-m` or `--mode` flags.
 
+To use a custom file or directory for the package lists, use the `-l` or `--location` flags.
+
 ## Details
 Hooroo creates separate apt, flatpak and pacman package files.
 
