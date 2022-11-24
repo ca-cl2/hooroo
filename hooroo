@@ -150,8 +150,20 @@ fi
 # Check for command
 case $cmd in
 	apply)
+		# Exit if hooroo directory doesn't exist
+		if [[ ! -d $hooroo_dir ]]; then
+			echo "Error: $hooroo_dir: No such directory"
+			exit 1
+		fi
+
 		# Apt specific commands
 		if [[ -n $apt_mode ]]; then
+			# Exit if apt file doesn't exist
+			if [[ ! -f $apt_file ]]; then
+				echo "Error: $apt_file: No such file"
+				exit 1
+			fi
+
 			installed_packages=$(apt-mark showmanual) # Only show explicitly installed packages
 			packages=$(cat "$apt_file")
 
@@ -174,6 +186,12 @@ case $cmd in
 
 		# Flatpak specific commands
 		if [[ -n $flatpak_mode ]]; then
+			# Exit if flatpak file doesn't exist
+			if [[ ! -f $flatpak_file ]]; then
+				echo "Error: $flatpak_file: No such file"
+				exit 1
+			fi
+
 			installed_packages=$(flatpak list --app --columns=ref) # Only show apps, not runtimes
 			packages=$(cat "$flatpak_file")
 
@@ -197,6 +215,12 @@ case $cmd in
 
 		# Pacman specific commands
 		if [[ -n $pacman_mode ]]; then
+			# Exit if pacman file doesn't exist
+			if [[ ! -f $pacman_file ]]; then
+				echo "Error: $pacman_file: No such file"
+				exit 1
+			fi
+
 			installed_packages=$($pacman_cmd -Qqe) # Only show explicitly installed packages
 			packages=$(cat "$pacman_file")
 
@@ -221,7 +245,7 @@ case $cmd in
 		# Create hooroo directory if it doesn't exist
 		if [[ ! -d $hooroo_dir ]]; then
 			mkdir -p "$hooroo_dir"
-			echo Created new package files directory at "$hooroo_dir"
+			echo "Created new package files directory at $hooroo_dir"
 		fi
 
 		# Apt specific commands
@@ -229,7 +253,7 @@ case $cmd in
 			# Create apt packages file if it doesn't exist
 			if [[ ! -f $apt_file ]]; then
 				touch "$apt_file"
-				echo Created new apt packages file at "$apt_file"
+				echo "Created new apt packages file at $apt_file"
 			fi
 
 			installed_packages=$(apt-mark showmanual) # Only show explicitly installed packages
@@ -247,7 +271,7 @@ case $cmd in
 			# Create flatpak apps file if it doesn't exist
 			if [[ ! -f $flatpak_file ]]; then
 				touch "$flatpak_file"
-				echo Created new flatpak packages file at "$flatpak_file"
+				echo "Created new flatpak packages file at $flatpak_file"
 			fi
 
 			installed_packages=$(flatpak list --app --columns=ref) # Only show apps, not runtimes
@@ -265,7 +289,7 @@ case $cmd in
 			# Create pacman packages file if it doesn't exist
 			if [[ ! -f $pacman_file ]]; then
 				touch "$pacman_file"
-				echo Created new pacman packages file at "$pacman_file"
+				echo "Created new pacman packages file at $pacman_file"
 			fi
 
 			installed_packages=$($pacman_cmd -Qqe) # Only show explicitly installed packages
