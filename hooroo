@@ -158,10 +158,8 @@ case $cmd in
 			# Install packages in the apt packages file that aren't explicitly installed
 			installs=$(diff --old-line-format= --unchanged-line-format= <(echo "$installed_packages") <(echo "$packages"))
 			if [[ -n $installs ]]; then
-				apt-get update 2>/dev/null && apt-get install $yes "$installs" 2>/dev/null
-
 				# Exit if there was an error installing apt packages
-				if (( $? > 0 )); then
+				if ! (apt-get update 2>/dev/null && apt-get install $yes "$installs" 2>/dev/null); then
 					echo hooroo: Error installing apt packages
 					exit 1
 				fi
@@ -170,10 +168,8 @@ case $cmd in
 			# Remove explicitly installed packages not in the apt packages file, and unneeded dependencies
 			removes=$(diff --old-line-format= --unchanged-line-format= <(echo "$packages") <(echo "$installed_packages"))
 			if [[ -n $removes ]]; then
-				apt-get autoremove --purge $yes "$removes" 2>/dev/null
-
 				# Exit if there was an error removing apt packages
-				if (( $? > 0 )); then
+				if ! apt-get autoremove --purge $yes "$removes" 2>/dev/null; then
 					echo hooroo: Error removing apt packages
 					exit 1
 				fi
@@ -198,10 +194,8 @@ case $cmd in
 			# Install apps in the flatpak packages file that aren't explicitly installed
 			installs=$(diff --old-line-format= --unchanged-line-format= <(echo "$installed_packages") <(echo "$packages"))
 			if [[ -n $installs ]]; then
-				flatpak install $interactive "$installs" 2>/dev/null
-
 				# Exit if there was an error installing flatpak packages
-				if (( $? > 0 )); then
+				if ! flatpak install $interactive "$installs" 2>/dev/null; then
 					echo hooroo: Error installing flatpak packages
 					exit 1
 				fi
@@ -210,10 +204,8 @@ case $cmd in
 			# Remove explicitly installed apps not in the flatpak packages file, and unneeded dependencies
 			removes=$(diff --old-line-format= --unchanged-line-format= <(echo "$packages") <(echo "$installed_packages"))
 			if [[ -n $removes ]]; then
-				flatpak remove $interactive "$removes" 2>/dev/null
-
 				# Exit if there was an error removing flatpak packages
-				if (( $? > 0 )); then
+				if ! flatpak remove $interactive "$removes" 2>/dev/null; then
 					echo hooroo: Error removing flatpak packages
 					exit 1
 				fi
@@ -239,10 +231,8 @@ case $cmd in
 			# Install packages in the pacman packages file that aren't explicitly installed
 			installs=$(diff --old-line-format= --unchanged-line-format= <(echo "$installed_packages") <(echo "$packages"))
 			if [[ -n $installs ]]; then
-				$pacman_cmd -Sy $confirm "$installs" 2>/dev/null
-
 				# Exit if there was an error installing pacman packages
-				if (( $? > 0 )); then
+				if ! $pacman_cmd -Sy $confirm "$installs" 2>/dev/null; then
 					echo hooroo: Error installing pacman packages
 					exit 1
 				fi
@@ -251,10 +241,8 @@ case $cmd in
 			# Remove explicitly installed packages not in the pacman packages file, and unneeded dependencies
 			removes=$(diff --old-line-format= --unchanged-line-format= <(echo "$packages") <(echo "$installed_packages"))
 			if [[ -n $removes ]]; then
-				$pacman_cmd -Rsn $confirm "$removes" 2>/dev/null
-
 				# Exit if there was an error removing pacman packages
-				if (( $? > 0 )); then
+				if ! $pacman_cmd -Rsn $confirm "$removes" 2>/dev/null; then
 					echo hooroo: Error removing pacman packages
 					exit 1
 				fi
