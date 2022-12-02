@@ -52,10 +52,7 @@ while (( $# > 0 )); do
 			shift
 			mode=$1
 			shift	;;
-		--noconfirm)
-			noconfirm=true
-			shift	;;
-		--yes)
+		--noconfirm | --yes)
 			noconfirm=true
 			shift	;;
 		*)
